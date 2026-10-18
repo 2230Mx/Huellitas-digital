@@ -17,14 +17,14 @@
       <button class="btn" id="btnNueva">Publicar un animal</button>
     </nav>
   </header>
- 
+
   <section class="hero">
     <h1>Ayúdalos a volver a casa</h1>
     <p>Busca animales perdidos o encuentra un nuevo compañero para adoptar.</p>
   </section>
- 
+
   <div class="banner">Espacio publicitario · Tu veterinaria o tienda local aquí</div>
- 
+
   <main>
     <form class="filtros" id="filtros">
       <input type="search" id="fCiudad" placeholder="Ciudad o zona">
@@ -36,21 +36,21 @@
     <p id="conteo" class="conteo"></p>
     <div id="lista" class="grid"></div>
   </main>
- 
+
   <section class="donar">
     <h2>Esta plataforma es gratuita gracias a ti</h2>
     <p>Tu aportación voluntaria ayuda a mantener Huellitas a Casa.</p>
     <a class="btn" href="#" id="btnDonar">Donar</a>
   </section>
- 
+
   <footer>
     <p>Recomendados para tu mascota: <a href="#">Alimento</a> · <a href="#">Collares con placa</a> · <a href="#">Transportadoras</a> (enlaces de afiliados)</p>
     <p>Huellitas a Casa no realiza rescates ni traslados. Esas acciones dependen de rescatistas y refugios.</p>
   </footer>
- 
+
   <!-- Ficha del animal -->
   <dialog id="ficha"></dialog>
- 
+
   <!-- Formulario de publicación -->
   <dialog id="formDlg">
     <form id="formNueva" method="dialog">
@@ -81,7 +81,8 @@
       </div>
     </form>
   </dialog>
- 
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

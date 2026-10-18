@@ -1,43 +1,43 @@
-// ===== Datos de ejemplo (después los puedes guardar en una base de datos) =====
+// ===== 1. CONEXIÓN CON SUPABASE (pega aquí tus 2 datos) =====
+const SUPABASE_URL = "https://kgdvbvatsjfruxudrgih.supabase.co";
+const SUPABASE_KEY = "sb_publishable_G4UzdKF_gC0_FIRrYducnQ_RVhRBvLo";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const ESTADOS = {
   perdidas: ["En búsqueda", "Encontrado"],
   adopcion: ["En adopción", "Adoptado"]
 };
 const EMOJI = { Perro: "🐶", Gato: "🐱", Otro: "🐾" };
 
-let publicaciones = [
-  { id: 1, seccion: "perdidas", estado: "En búsqueda", nombre: "Toby", especie: "Perro", raza: "Criollo", tamano: "Mediano",
-    ciudad: "Jiutepec", fecha: "2026-10-12", descripcion: "Pelaje café con mancha blanca en el pecho. Lleva collar azul. Es amigable.",
-    salud: "Vacunas al día", requisitos: "", whatsapp: "", correo: "", foto: "" },
-  { id: 2, seccion: "perdidas", estado: "Encontrado", nombre: "", especie: "Gato", raza: "Siamés", tamano: "Pequeño",
-    ciudad: "Cuernavaca", fecha: "2026-10-15", descripcion: "Gato de ojos azules encontrado cerca del parque. Muy tranquilo.",
-    salud: "", requisitos: "", whatsapp: "", correo: "", foto: "" },
-  { id: 3, seccion: "adopcion", estado: "En adopción", nombre: "Luna", especie: "Perro", raza: "Mestiza", tamano: "Mediano",
-    ciudad: "Cuernavaca", fecha: "2026-10-10", descripcion: "Cariñosa, juguetona y buena con niños. Rescatada hace 6 meses.",
-    salud: "Vacunada, esterilizada y desparasitada", requisitos: "Patio o espacio amplio. Entrevista previa y seguimiento.", whatsapp: "", correo: "", foto: "" },
-  { id: 4, seccion: "adopcion", estado: "En adopción", nombre: "Mishi", especie: "Gato", raza: "Doméstico", tamano: "Pequeño",
-    ciudad: "Jiutepec", fecha: "2026-10-14", descripcion: "Tranquilo, ideal para departamento. Se lleva bien con otros gatos.",
-    salud: "Vacunado y esterilizado", requisitos: "Compromiso de esterilización y no dejarlo salir sin supervisión.", whatsapp: "", correo: "", foto: "" }
-];
-
+let publicaciones = [];
 let seccion = "perdidas";
 const $ = (s) => document.querySelector(s);
 
-// ===== Llenar selects de estado =====
+// ===== 2. LEER publicaciones desde Supabase =====
+async function cargar() {
+  if (SUPABASE_URL.startsWith("PEGA")) {
+    $("#lista").innerHTML = '<p class="vacio">Falta pegar tu URL y tu clave de Supabase en app.js.</p>';
+    return;
+  }
+  const { data, error } = await db.from("publicaciones").select("*").order("created_at", { ascending: false });
+  if (error) { $("#lista").innerHTML = `<p class="vacio">No se pudieron cargar las publicaciones: ${esc(error.message)}</p>`; return; }
+  publicaciones = data.map(p => ({ ...p, fecha: p.created_at.slice(0, 10) }));
+  mostrar();
+}
+
 function llenarEstados(select, sec, incluirTodos) {
   select.innerHTML = (incluirTodos ? '<option value="">Todos los estados</option>' : "") +
     ESTADOS[sec].map(e => `<option>${e}</option>`).join("");
 }
 
-// ===== Mostrar tarjetas =====
 function mostrar() {
   const ciudad = $("#fCiudad").value.trim().toLowerCase();
   const esp = $("#fEspecie").value, tam = $("#fTamano").value, est = $("#fEstado").value;
   let lista = publicaciones.filter(p =>
     p.seccion === seccion &&
-    (!ciudad || p.ciudad.toLowerCase().includes(ciudad)) &&
+    (!ciudad || (p.ciudad || "").toLowerCase().includes(ciudad)) &&
     (!esp || p.especie === esp) && (!tam || p.tamano === tam) && (!est || p.estado === est));
-  lista.sort((a, b) => $("#fOrden").value === "nuevo" ? b.fecha.localeCompare(a.fecha) : a.fecha.localeCompare(b.fecha));
+  lista.sort((a, b) => $("#fOrden").value === "nuevo" ? b.created_at.localeCompare(a.created_at) : a.created_at.localeCompare(b.created_at));
 
   $("#conteo").textContent = `${lista.length} publicación(es)`;
   $("#lista").innerHTML = lista.length ? lista.map(tarjeta).join("") :
@@ -46,7 +46,7 @@ function mostrar() {
 
 function claseEstado(e) { return e === "En búsqueda" ? "busca" : (e === "Encontrado" || e === "Adoptado") ? "ok" : ""; }
 function fotoHTML(p, cls = "foto") {
-  return p.foto ? `<div class="${cls}" style="background-image:url('${p.foto}')"></div>`
+  return p.foto ? `<div class="${cls}" style="background-image:url('${esc(p.foto)}')"></div>`
                 : `<div class="${cls}">${EMOJI[p.especie] || "🐾"}</div>`;
 }
 function tarjeta(p) {
@@ -54,26 +54,26 @@ function tarjeta(p) {
     ${fotoHTML(p)}
     <div class="cuerpo">
       <h3>${esc(p.nombre) || "Sin nombre"}</h3>
-      <p class="meta">${p.especie} · ${p.tamano} · ${esc(p.ciudad)}</p>
-      <span class="chip ${claseEstado(p.estado)}">${p.estado}</span>
+      <p class="meta">${esc(p.especie)} · ${esc(p.tamano)} · ${esc(p.ciudad)}</p>
+      <span class="chip ${claseEstado(p.estado)}">${esc(p.estado)}</span>
     </div></button>`;
 }
-// Evita que el texto escrito por usuarios se interprete como HTML
-function esc(t) { return (t || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function esc(t) { return String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
 // ===== Ficha detallada =====
 function abrirFicha(id) {
   const p = publicaciones.find(x => x.id === id);
-  const wa = p.whatsapp ? `<a class="btn wa" target="_blank" href="https://wa.me/${p.whatsapp}?text=${encodeURIComponent("Hola, vi la publicación de " + (p.nombre || "este animal") + " en Huellitas a Casa")}">WhatsApp</a>` : "";
+  const tel = (p.whatsapp || "").replace(/\D/g, "");
+  const wa = tel ? `<a class="btn wa" target="_blank" href="https://wa.me/${tel}?text=${encodeURIComponent("Hola, vi la publicación de " + (p.nombre || "este animal") + " en Huellitas a Casa")}">WhatsApp</a>` : "";
   const mail = p.correo ? `<a class="btn" href="mailto:${esc(p.correo)}">Correo</a>` : "";
   const otro = ESTADOS[p.seccion].find(e => e !== p.estado);
   $("#ficha").innerHTML = `<div class="det">
     ${fotoHTML(p)}
-    <h2>${esc(p.nombre) || "Sin nombre"} <span class="chip ${claseEstado(p.estado)}">${p.estado}</span></h2>
+    <h2>${esc(p.nombre) || "Sin nombre"} <span class="chip ${claseEstado(p.estado)}">${esc(p.estado)}</span></h2>
     <dl>
-      <dt>Especie</dt><dd>${p.especie}</dd>
+      <dt>Especie</dt><dd>${esc(p.especie)}</dd>
       <dt>Raza</dt><dd>${esc(p.raza) || "No indicada"}</dd>
-      <dt>Tamaño</dt><dd>${p.tamano}</dd>
+      <dt>Tamaño</dt><dd>${esc(p.tamano)}</dd>
       <dt>Publicado</dt><dd>${p.fecha}</dd>
       ${p.salud ? `<dt>Salud</dt><dd>${esc(p.salud)}</dd>` : ""}
       ${p.requisitos ? `<dt>Requisitos</dt><dd>${esc(p.requisitos)}</dd>` : ""}
@@ -88,9 +88,12 @@ function abrirFicha(id) {
   $("#ficha").showModal();
 }
 
-function cambiarEstado(id, nuevo) {
-  publicaciones.find(p => p.id === id).estado = nuevo;
-  $("#ficha").close(); mostrar();
+// ===== 3. ACTUALIZAR estado en Supabase =====
+async function cambiarEstado(id, nuevo) {
+  const { error } = await db.from("publicaciones").update({ estado: nuevo }).eq("id", id);
+  if (error) return alert("No se pudo actualizar: " + error.message);
+  $("#ficha").close();
+  cargar();
 }
 function compartir(id) {
   const p = publicaciones.find(x => x.id === id);
@@ -99,7 +102,7 @@ function compartir(id) {
   else { navigator.clipboard.writeText(texto + " " + location.href); alert("Texto copiado. Pégalo en tus redes."); }
 }
 
-// ===== Formulario de nueva publicación =====
+// ===== 4. GUARDAR publicación nueva (foto a Storage + datos a la tabla) =====
 $("#btnNueva").onclick = () => { actualizarEstadosForm(); $("#formDlg").showModal(); };
 $("#cerrarForm").onclick = () => $("#formDlg").close();
 $("#formNueva").elements.seccion.onchange = actualizarEstadosForm;
@@ -108,19 +111,32 @@ function actualizarEstadosForm() {
   llenarEstados(f.elements.estado, f.elements.seccion.value, false);
 }
 
-$("#formNueva").onsubmit = (e) => {
-  const f = e.target, d = Object.fromEntries(new FormData(f));
-  const guardar = (foto) => {
-    publicaciones.unshift({ id: Date.now(), fecha: new Date().toISOString().slice(0, 10), ...d, foto });
-    seccion = d.seccion; cambiarSeccion(seccion); f.reset();
-  };
+$("#formNueva").onsubmit = async (e) => {
+  e.preventDefault();
+  const f = e.target, boton = f.querySelector('button[type="submit"]');
+  const d = Object.fromEntries(new FormData(f));
   const archivo = f.elements.foto.files[0];
-  if (archivo) { // Leer la foto como imagen en memoria
-    const lector = new FileReader();
-    lector.onload = () => guardar(lector.result);
-    lector.readAsDataURL(archivo);
-  } else guardar("");
   delete d.foto;
+  boton.disabled = true; boton.textContent = "Publicando…";
+
+  try {
+    d.foto = "";
+    if (archivo) {
+      const ext = (archivo.name.split(".").pop() || "jpg").replace(/[^a-z0-9]/gi, "").toLowerCase();
+      const ruta = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: errFoto } = await db.storage.from("fotos").upload(ruta, archivo);
+      if (errFoto) throw errFoto;
+      d.foto = db.storage.from("fotos").getPublicUrl(ruta).data.publicUrl;
+    }
+    const { error } = await db.from("publicaciones").insert(d);
+    if (error) throw error;
+    f.reset(); $("#formDlg").close();
+    await cargar(); cambiarSeccion(d.seccion);
+  } catch (err) {
+    alert("No se pudo publicar: " + err.message);
+  } finally {
+    boton.disabled = false; boton.textContent = "Publicar";
+  }
 };
 
 // ===== Cambiar entre Perdidas y Adopción =====
@@ -135,3 +151,4 @@ $("#filtros").addEventListener("input", mostrar);
 $("#btnDonar").onclick = (e) => { e.preventDefault(); alert("Aquí conectarás tu enlace de donación (Mercado Pago, PayPal, etc.)."); };
 
 cambiarSeccion("perdidas");
+cargar();
