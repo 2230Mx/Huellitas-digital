@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Huellitas a Casa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="logo" href="#">🐾 Huellitas a Casa</a>
+    <nav>
+      <button class="tab active" data-seccion="perdidas">Mascotas perdidas</button>
+      <button class="tab" data-seccion="adopcion">Adopción</button>
+      <button class="btn" id="btnNueva">Publicar un animal</button>
+    </nav>
+  </header>
+ 
+  <section class="hero">
+    <h1>Ayúdalos a volver a casa</h1>
+    <p>Busca animales perdidos o encuentra un nuevo compañero para adoptar.</p>
+  </section>
+ 
+  <div class="banner">Espacio publicitario · Tu veterinaria o tienda local aquí</div>
+ 
+  <main>
+    <form class="filtros" id="filtros">
+      <input type="search" id="fCiudad" placeholder="Ciudad o zona">
+      <select id="fEspecie"><option value="">Todas las especies</option><option>Perro</option><option>Gato</option><option>Otro</option></select>
+      <select id="fTamano"><option value="">Cualquier tamaño</option><option>Pequeño</option><option>Mediano</option><option>Grande</option></select>
+      <select id="fEstado"></select>
+      <select id="fOrden"><option value="nuevo">Más recientes</option><option value="viejo">Más antiguos</option></select>
+    </form>
+    <p id="conteo" class="conteo"></p>
+    <div id="lista" class="grid"></div>
+  </main>
+ 
+  <section class="donar">
+    <h2>Esta plataforma es gratuita gracias a ti</h2>
+    <p>Tu aportación voluntaria ayuda a mantener Huellitas a Casa.</p>
+    <a class="btn" href="#" id="btnDonar">Donar</a>
+  </section>
+ 
+  <footer>
+    <p>Recomendados para tu mascota: <a href="#">Alimento</a> · <a href="#">Collares con placa</a> · <a href="#">Transportadoras</a> (enlaces de afiliados)</p>
+    <p>Huellitas a Casa no realiza rescates ni traslados. Esas acciones dependen de rescatistas y refugios.</p>
+  </footer>
+ 
+  <!-- Ficha del animal -->
+  <dialog id="ficha"></dialog>
+ 
+  <!-- Formulario de publicación -->
+  <dialog id="formDlg">
+    <form id="formNueva" method="dialog">
+      <h2>Publicar un animal</h2>
+      <label>Tipo de publicación
+        <select name="seccion" required>
+          <option value="perdidas">Mascota perdida o encontrada</option>
+          <option value="adopcion">En adopción</option>
+        </select></label>
+      <label>Estado
+        <select name="estado" required></select></label>
+      <label>Foto <input type="file" name="foto" accept="image/*"></label>
+      <label>Nombre (si se conoce) <input name="nombre"></label>
+      <div class="fila">
+        <label>Especie <select name="especie"><option>Perro</option><option>Gato</option><option>Otro</option></select></label>
+        <label>Tamaño <select name="tamano"><option>Pequeño</option><option>Mediano</option><option>Grande</option></select></label>
+      </div>
+      <label>Raza <input name="raza"></label>
+      <label>Ciudad o zona <input name="ciudad" required></label>
+      <label>Descripción física y de comportamiento <textarea name="descripcion" rows="3" required></textarea></label>
+      <label>Información médica (vacunas, esterilización…) <input name="salud"></label>
+      <label>Requisitos de adopción <input name="requisitos"></label>
+      <label>WhatsApp (solo números) <input name="whatsapp" inputmode="numeric"></label>
+      <label>Correo electrónico <input type="email" name="correo"></label>
+      <div class="fila fin">
+        <button type="button" class="btn sec" id="cerrarForm">Cancelar</button>
+        <button type="submit" class="btn">Publicar</button>
+      </div>
+    </form>
+  </dialog>
+ 
+  <script src="app.js"></script>
+</body>
+</html>
