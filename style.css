@@ -60,3 +60,17 @@ footer a{color:var(--verde-osc)}
 
 @media (max-width:520px){.fila{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ===== Cuentas, mapa y chat ===== */
+[hidden]{display:none!important}
+.btn.claro{background:transparent;border:2px solid #fff;color:#fff}
+#sesion{display:flex;gap:.4rem;align-items:center}
+.mapaFicha{height:220px;border-radius:12px;border:2px solid var(--borde)}
+.dueno{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;padding:.7rem;border:2px solid var(--borde);border-radius:14px}
+.dueno .btn{padding:.35rem .9rem}
+.avatar{width:48px;height:48px;border-radius:50%;background:#dcefec center/cover;display:grid;place-items:center;font-size:1.4rem}
+.chat{display:flex;flex-direction:column;gap:.4rem;height:300px;overflow-y:auto;padding:.6rem;background:var(--fondo);border-radius:12px}
+.burbuja{max-width:80%;padding:.45rem .8rem;border-radius:14px;background:#fff;border:1px solid var(--borde);word-break:break-word}
+.burbuja.mia{align-self:flex-end;background:var(--verde);color:#fff;border-color:var(--verde)}
+#bandeja{display:grid;gap:.5rem}
+#bandeja .card{padding:.7rem 1rem}

@@ -6,6 +6,7 @@
   <title>Huellitas a Casa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,6 +16,12 @@
       <button class="tab active" data-seccion="perdidas">Mascotas perdidas</button>
       <button class="tab" data-seccion="adopcion">Adopción</button>
       <button class="btn" id="btnNueva">Publicar un animal</button>
+      <button class="tab" id="btnMensajes" hidden>💬 Mensajes</button>
+      <button class="btn sec claro" id="btnLogin">Entrar con Google</button>
+      <span id="sesion" hidden>
+        <button class="tab" id="btnPerfil">👤 <span id="nombreUsuario"></span></button>
+        <button class="tab" id="btnSalir">Salir</button>
+      </span>
     </nav>
   </header>
 
@@ -48,10 +55,27 @@
     <p>Huellitas a Casa no realiza rescates ni traslados. Esas acciones dependen de rescatistas y refugios.</p>
   </footer>
 
-  <!-- Ficha del animal -->
   <dialog id="ficha"></dialog>
 
-  <!-- Formulario de publicación -->
+  <!-- Perfil (obligatorio para publicar) -->
+  <dialog id="perfilDlg">
+    <form id="perfilForm" method="dialog">
+      <h2>Tu perfil</h2>
+      <p class="meta">Tu teléfono no se muestra a nadie. Los demás te escriben por el chat interno.</p>
+      <div class="fila">
+        <label>Nombre * <input name="nombre" required></label>
+        <label>Apellido * <input name="apellido" required></label>
+      </div>
+      <label>Teléfono * <input name="telefono" required inputmode="numeric" pattern="[0-9]{10}" title="10 dígitos"></label>
+      <label>Foto de perfil (opcional) <input type="file" name="foto" accept="image/*"></label>
+      <div class="fila fin">
+        <button type="button" class="btn sec" id="cerrarPerfil">Cancelar</button>
+        <button type="submit" class="btn">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Publicar -->
   <dialog id="formDlg">
     <form id="formNueva" method="dialog">
       <h2>Publicar un animal</h2>
@@ -60,8 +84,7 @@
           <option value="perdidas">Mascota perdida o encontrada</option>
           <option value="adopcion">En adopción</option>
         </select></label>
-      <label>Estado
-        <select name="estado" required></select></label>
+      <label>Estado <select name="estado" required></select></label>
       <label>Foto <input type="file" name="foto" accept="image/*"></label>
       <label>Nombre (si se conoce) <input name="nombre"></label>
       <div class="fila">
@@ -70,11 +93,14 @@
       </div>
       <label>Raza <input name="raza"></label>
       <label>Ciudad o zona <input name="ciudad" required></label>
+      <div id="mapaForm" hidden>
+        <p class="meta">📍 Toca el mapa donde se vio por última vez *</p>
+        <div id="mapSel" class="mapaFicha"></div>
+        <input type="hidden" name="lat"><input type="hidden" name="lng">
+      </div>
       <label>Descripción física y de comportamiento <textarea name="descripcion" rows="3" required></textarea></label>
       <label>Información médica (vacunas, esterilización…) <input name="salud"></label>
       <label>Requisitos de adopción <input name="requisitos"></label>
-      <label>WhatsApp (solo números) <input name="whatsapp" inputmode="numeric"></label>
-      <label>Correo electrónico <input type="email" name="correo"></label>
       <div class="fila fin">
         <button type="button" class="btn sec" id="cerrarForm">Cancelar</button>
         <button type="submit" class="btn">Publicar</button>
@@ -82,7 +108,31 @@
     </form>
   </dialog>
 
+  <!-- Chat interno -->
+  <dialog id="chatDlg">
+    <div class="det">
+      <h2>Chat</h2>
+      <div id="chatMsgs" class="chat"></div>
+      <form id="chatForm" class="fila" style="grid-template-columns:1fr auto" method="dialog">
+        <input id="chatTexto" placeholder="Escribe un mensaje" required autocomplete="off">
+        <button class="btn" type="submit">Enviar</button>
+      </form>
+      <button class="btn sec" onclick="document.querySelector('#chatDlg').close()">Cerrar</button>
+    </div>
+  </dialog>
+
+  <!-- Bandeja de mensajes -->
+  <dialog id="bandejaDlg">
+    <div class="det">
+      <h2>Mis mensajes</h2>
+      <div id="bandeja"></div>
+      <button class="btn sec" onclick="document.querySelector('#bandejaDlg').close()">Cerrar</button>
+    </div>
+  </dialog>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
