@@ -74,3 +74,13 @@ footer a{color:var(--verde-osc)}
 .burbuja.mia{align-self:flex-end;background:var(--verde);color:#fff;border-color:var(--verde)}
 #bandeja{display:grid;gap:.5rem}
 #bandeja .card{padding:.7rem 1rem}
+
+/* ===== Admin, avisos y WhatsApp ===== */
+.badge{display:inline-block;min-width:1.3rem;padding:0 .4rem;border-radius:999px;background:var(--coral);color:#fff;font-size:.78rem;font-weight:800;text-align:center}
+.toast{position:fixed;right:1rem;bottom:1rem;max-width:320px;padding:.8rem 1rem;background:var(--verde-osc);color:#fff;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.3);cursor:pointer;z-index:50}
+.prefijo{display:flex;align-items:stretch}
+.prefijo span{display:grid;place-items:center;padding:0 .8rem;background:var(--borde);border-radius:10px 0 0 10px;font-weight:800}
+.prefijo input{border-radius:0 10px 10px 0}
+.queja{padding:.8rem 1rem;border:2px solid var(--coral);border-radius:14px;display:grid;gap:.2rem}
+.queja.hecha{border-color:var(--borde);opacity:.6}
+#quejas{display:grid;gap:.7rem}
