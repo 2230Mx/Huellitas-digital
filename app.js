@@ -1,7 +1,6 @@
 // ===== 1. CONEXIÓN CON SUPABASE (pega aquí tus 2 datos) =====
 const SUPABASE_URL = "https://kgdvbvatsjfruxudrgih.supabase.co";
 const SUPABASE_KEY = "sb_publishable_G4UzdKF_gC0_FIRrYducnQ_RVhRBvLo";
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ESTADOS = { perdidas: ["En búsqueda", "Encontrado"], adopcion: ["En adopción", "Adoptado"] };
 const EMOJI = { Perro: "🐶", Gato: "🐱", Otro: "🐾" };
@@ -132,8 +131,10 @@ async function abrirFicha(id) {
   const otro = ESTADOS[p.seccion].find(e => e !== p.estado);
 
   const bloqueDueno = dueno ? `<div class="dueno">
-    <div class="avatar" style="${dueno.foto ? `background-image:url('${esc(dueno.foto)}')` : ""}">${dueno.foto ? "" : "👤"}</div>
-    <div><b>${esc(dueno.nombre)} ${esc(dueno.apellido)}</b><br><span class="meta">👍 ${likes} me gusta</span></div>
+    <button class="enlace" onclick="verPerfil('${p.user_id}')">
+      <div class="avatar" style="${dueno.foto ? `background-image:url('${esc(dueno.foto)}')` : ""}">${dueno.foto ? "" : "👤"}</div>
+      <span><b>${esc(dueno.nombre)} ${esc(dueno.apellido)}</b><br><span class="meta">👍 ${likes} me gusta · Ver perfil</span></span>
+    </button>
     ${!esDueno ? `<button class="btn sec" onclick="darLike('${p.user_id}',${yaLike},${p.id})">${yaLike ? "Quitar 👍" : "👍 Me gusta"}</button>
     <button class="btn sec" onclick="reportar('usuario','${p.user_id}')">🚩 Reportar cuenta</button>` : ""}</div>` : "";
 
@@ -228,6 +229,7 @@ async function abrirQuejas() {
       <span>Motivo: ${esc(r.motivo)}</span>
       <span class="meta">Reportó: ${nombre(r.reportante)} · ${r.created_at.slice(0, 10)}</span>
       <div class="acciones">
+        ${r.usuario_id ? `<button class="btn sec" onclick="verPerfil('${r.usuario_id}')">👤 Ver perfil</button>` : ""}
         ${pub ? `<button class="btn sec" onclick="verDesdeQuejas(${pub.id})">Ver publicación</button><button class="btn sec" onclick="eliminarPublicacion(${pub.id})">🗑 Eliminar publicación</button>` : ""}
         ${r.resuelto ? "" : `<button class="btn" onclick="resolverQueja(${r.id})">✔ Resuelto</button>`}
       </div></div>`;
@@ -374,3 +376,61 @@ $("#btnDonar").onclick = (e) => { e.preventDefault(); alert("Aquí conectarás t
 
 cambiarSeccion("perdidas");
 cargar();
+
+// ===== PERFIL DE USUARIO (público; con más datos para administradores) =====
+async function verPerfil(uid) {
+  const [pf, lk, mio, tel, rep] = await Promise.all([
+    db.from("perfiles").select("*").eq("id", uid).maybeSingle(),
+    db.from("likes").select("id", { count: "exact", head: true }).eq("a_user", uid),
+    usuario ? db.from("likes").select("id").eq("a_user", uid).eq("de_user", usuario.id).maybeSingle() : Promise.resolve({ data: null }),
+    esAdmin ? db.from("datos_privados").select("telefono").eq("id", uid).maybeSingle() : Promise.resolve({ data: null }),
+    esAdmin ? db.from("reportes").select("*").eq("usuario_id", uid).order("created_at", { ascending: false }) : Promise.resolve({ data: [] })
+  ]);
+  const p = pf.data;
+  if (!p) return alert("Este usuario ya no existe.");
+  const likes = lk.count || 0, yaLike = !!mio.data, esYo = usuario && usuario.id === uid;
+  const susPubs = publicaciones.filter(x => x.user_id === uid);
+  const reportes = rep.data || [];
+
+  const acciones = esYo ? `<button class="btn sec" onclick="$('#usuarioDlg').close();abrirPerfil()">Editar mi perfil</button>`
+    : usuario ? `<button class="btn sec" onclick="likePerfil('${uid}',${yaLike})">${yaLike ? "Quitar 👍" : "👍 Me gusta"}</button>
+                 <button class="btn sec" onclick="reportar('usuario','${uid}')">🚩 Reportar cuenta</button>`
+    : `<button class="btn" onclick="login()">Inicia sesión para dar like o reportar</button>`;
+
+  const bloqueAdmin = esAdmin ? `<div class="queja">
+      <b>🛡 Solo administradores</b>
+      <span>Teléfono: ${esc(tel.data?.telefono || "No registrado")}</span>
+      <span>Reportes contra esta cuenta: <b>${reportes.length}</b></span>
+      ${reportes.slice(0, 10).map(r => `<span class="meta">• ${esc(r.motivo)} (${r.tipo === "usuario" ? "cuenta" : "publicación"}, ${r.created_at.slice(0, 10)}${r.resuelto ? ", resuelto" : ""})</span>`).join("")}
+      ${!esYo ? `<div class="acciones"><button class="btn peligro" onclick="eliminarCuenta('${uid}')">🗑 Eliminar cuenta</button></div>` : ""}
+    </div>` : "";
+
+  $("#usuarioDlg").innerHTML = `<div class="det">
+    <div class="dueno">
+      <div class="avatar grande" style="${p.foto ? `background-image:url('${esc(p.foto)}')` : ""}">${p.foto ? "" : "👤"}</div>
+      <div><h2>${esc(p.nombre)} ${esc(p.apellido)}</h2>
+      <span class="meta">Miembro desde ${p.created_at.slice(0, 10)} · 👍 ${likes} · ${susPubs.length} publicación(es)</span></div>
+    </div>
+    <div class="acciones">${acciones}</div>
+    <h3>Publicaciones</h3>
+    <div id="bandeja">${susPubs.length ? susPubs.map(x => `<button class="card" onclick="abrirFicha(${x.id})">
+      <b>${esc(x.nombre) || "Sin nombre"}</b> · ${esc(x.especie)} · ${esc(x.ciudad)}
+      <span class="chip ${claseEstado(x.estado)}">${esc(x.estado)}</span></button>`).join("") : '<p class="meta">Todavía no tiene publicaciones.</p>'}</div>
+    ${bloqueAdmin}
+    <button class="btn sec" onclick="$('#usuarioDlg').close()">Cerrar</button></div>`;
+  if (!$("#usuarioDlg").open) $("#usuarioDlg").showModal();
+}
+async function likePerfil(uid, yaLike) {
+  if (yaLike) await db.from("likes").delete().eq("de_user", usuario.id).eq("a_user", uid);
+  else { const { error } = await db.from("likes").insert({ a_user: uid }); if (error) return alert(error.message); }
+  verPerfil(uid);
+}
+async function eliminarCuenta(uid) {
+  if (!confirm("¿Eliminar esta cuenta? Se borrarán también sus publicaciones, mensajes y likes. No se puede deshacer.")) return;
+  const { error } = await db.rpc("eliminar_usuario", { uid });
+  if (error) return alert("No se pudo eliminar la cuenta: " + error.message);
+  $("#usuarioDlg").close(); $("#ficha").close();
+  await cargar(); contarQuejas();
+  if ($("#quejasDlg").open) abrirQuejas();
+  alert("Cuenta eliminada.");
+}
