@@ -1,6 +1,7 @@
 // ===== 1. CONEXIÓN CON SUPABASE (pega aquí tus 2 datos) =====
 const SUPABASE_URL = "https://kgdvbvatsjfruxudrgih.supabase.co";
 const SUPABASE_KEY = "sb_publishable_G4UzdKF_gC0_FIRrYducnQ_RVhRBvLo";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ESTADOS = { perdidas: ["En búsqueda", "Encontrado"], adopcion: ["En adopción", "Adoptado"] };
 const EMOJI = { Perro: "🐶", Gato: "🐱", Otro: "🐾" };
