@@ -164,7 +164,7 @@ async function abrirFicha(id) {
     <div class="acciones">${acciones}${wa}<button class="btn sec" onclick="compartir(${p.id})">Compartir</button>${admin}
     <button class="btn sec" onclick="$('#ficha').close()">Cerrar</button></div></div>`;
   if (!$("#ficha").open) $("#ficha").showModal();
-  if (p.lat != null && p.seccion === "perdidas") setTimeout(() => {
+    if (p.lat != null) setTimeout(() => {
     mapaFicha = mapaBase("mapaFicha", [p.lat, p.lng], 15);
     L.marker([p.lat, p.lng]).addTo(mapaFicha);
   }, 100);
@@ -333,8 +333,10 @@ $("#formNueva").elements.seccion.onchange = () => { actualizarForm(); setTimeout
 function actualizarForm() {
   const f = $("#formNueva"), perdida = f.elements.seccion.value === "perdidas";
   llenarEstados(f.elements.estado, f.elements.seccion.value, false);
-  $("#mapaForm").hidden = !perdida;
-  if (perdida && !mapSel) {
+  $("#textoMapa").textContent = perdida
+    ? "📍 Toca el mapa donde se vio por última vez *"
+    : "📍 Toca el mapa donde se encuentra el animal (zona aproximada) *";
+  if (!mapSel) {
     mapSel = mapaBase("mapSel", [18.92, -99.18], 12);
     mapSel.on("click", (e) => {
       if (marcador) marcador.setLatLng(e.latlng); else marcador = L.marker(e.latlng).addTo(mapSel);
@@ -348,9 +350,8 @@ $("#formNueva").onsubmit = async (e) => {
   const f = e.target, boton = f.querySelector('button[type="submit"]');
   const d = Object.fromEntries(new FormData(f)), archivo = f.elements.foto.files[0];
   delete d.foto;
-  if (d.seccion === "perdidas" && !d.lat) return alert("Toca el mapa para marcar dónde se vio por última vez.");
-  d.lat = d.seccion === "perdidas" ? Number(d.lat) : null;
-  d.lng = d.seccion === "perdidas" ? Number(d.lng) : null;
+    if (!d.lat) return alert("Toca el mapa para marcar la ubicación.");
+  d.lat = Number(d.lat); d.lng = Number(d.lng);
   d.whatsapp = (d.whatsapp || "").replace(/\D/g, "") || null;
   if (d.whatsapp && d.whatsapp.length !== 10) return alert("El WhatsApp debe tener 10 dígitos (sin el 52).");
   boton.disabled = true; boton.textContent = "Publicando…";

@@ -83,7 +83,7 @@
       <h2>Publicar un animal</h2>
       <label>Tipo de publicación
         <select name="seccion" required>
-          <option value="perdidas">Mascota perdida o encontrada</option>
+          <option value="perdidas">Mascota perdida</option>
           <option value="adopcion">En adopción</option>
         </select></label>
       <label>Estado <select name="estado" required></select></label>
@@ -95,8 +95,8 @@
       </div>
       <label>Raza <input name="raza"></label>
       <label>Ciudad o zona <input name="ciudad" required></label>
-      <div id="mapaForm" hidden>
-        <p class="meta">📍 Toca el mapa donde se vio por última vez *</p>
+      <div id="mapaForm">
+        <p class="meta" id="textoMapa">📍 Toca el mapa donde se vio por última vez *</p>
         <div id="mapSel" class="mapaFicha"></div>
         <input type="hidden" name="lat"><input type="hidden" name="lng">
       </div>
