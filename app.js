@@ -71,7 +71,7 @@ async function abrirPerfil() {
   f.elements.telefono.value = data?.telefono ?? "";
   if (!$("#perfilDlg").open) $("#perfilDlg").showModal();
 }
-$("#btnPerfil").onclick = abrirPerfil;
+$("#btnPerfil").onclick = () => verPerfil(usuario.id);
 $("#cerrarPerfil").onclick = () => $("#perfilDlg").close();
 $("#perfilForm").onsubmit = async (e) => {
   e.preventDefault();
@@ -414,7 +414,12 @@ async function verPerfil(uid) {
       <span class="meta">Miembro desde ${p.created_at.slice(0, 10)} · 👍 ${likes} · ${susPubs.length} publicación(es)</span></div>
     </div>
     <div class="acciones">${acciones}</div>
-    <h3>Publicaciones</h3>
+        <div class="stats">
+      <div><b>${likes}</b><span>👍 Likes</span></div>
+      <div><b>${susPubs.length}</b><span>Publicaciones</span></div>
+      <div><b>${susPubs.filter(x => x.estado === "Encontrado" || x.estado === "Adoptado").length}</b><span>Casos resueltos</span></div>
+    </div>
+    <h3>${esYo ? "Mis publicaciones" : "Publicaciones"}</h3>
     <div id="bandeja">${susPubs.length ? susPubs.map(x => `<button class="card" onclick="abrirFicha(${x.id})">
       <b>${esc(x.nombre) || "Sin nombre"}</b> · ${esc(x.especie)} · ${esc(x.ciudad)}
       <span class="chip ${claseEstado(x.estado)}">${esc(x.estado)}</span></button>`).join("") : '<p class="meta">Todavía no tiene publicaciones.</p>'}</div>

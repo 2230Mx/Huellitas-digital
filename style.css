@@ -136,3 +136,7 @@ dialog form .btn:not(.sec){padding:.7rem 1.7rem}
   dialog[open]{animation:aparece .25s ease}
   @keyframes aparece{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
 }
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem}
+.stats div{display:grid;padding:.6rem;text-align:center;background:var(--fondo);border:2px solid var(--borde);border-radius:14px}
+.stats b{font-family:"Baloo 2",sans-serif;font-size:1.6rem;line-height:1.1;color:var(--verde-osc)}
+.stats span{font-size:.8rem;color:var(--suave)}
