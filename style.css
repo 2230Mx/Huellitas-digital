@@ -1,6 +1,6 @@
 :root{
-  --verde:#0f766e; --verde-osc:#0b4f4a; --sol:#f5b335; --coral:#e4572e;
-  --fondo:#f3f8f7; --tarjeta:#ffffff; --texto:#1c2b2a; --suave:#5d6f6d; --borde:#d5e3e1;
+  --verde:#2f7fc1; --verde-osc:#2b4a6b; --sol:#ffd166; --coral:#e5605d;
+  --fondo:#f4f9fd; --tarjeta:#ffffff; --texto:#22313f; --suave:#5f7284; --borde:#d6e6f2;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--fondo);color:var(--texto);line-height:1.55}
