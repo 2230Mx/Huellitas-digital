@@ -350,26 +350,19 @@ $("#btnNueva").onclick = () => {
 $("#cerrarForm").onclick = () => $("#formDlg").close();
 $("#formNueva").elements.seccion.onchange = () => { actualizarForm(); setTimeout(() => mapSel && mapSel.invalidateSize(), 150); };
 function actualizarForm() {
-  // ===== Buscar la calle o ciudad y marcarla en el mapa =====
-let temporizador = null;
-async function buscarEnMapa() {
-  const f = $("#formNueva");
-  const texto = [$("#buscaCalle").value.trim(), f.elements.ciudad.value.trim()].filter(Boolean).join(", ");
-  if (texto.length < 3 || !mapSel) return;
-  try {
-    const r = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=mx&q=" + encodeURIComponent(texto));
-    const lugares = await r.json();
-    if (!lugares.length) return;
-    const pos = L.latLng(+lugares[0].lat, +lugares[0].lon);
-    mapSel.setView(pos, 16);
-    if (marcador) marcador.setLatLng(pos); else marcador = L.marker(pos).addTo(mapSel);
-    f.elements.lat.value = pos.lat.toFixed(3);
-    f.elements.lng.value = pos.lng.toFixed(3);
-  } catch (e) { /* sin internet o servicio ocupado: se puede tocar el mapa a mano */ }
-}
-["#buscaCalle", "#formNueva [name=ciudad]"].forEach(sel =>
-  $(sel).addEventListener("input", () => { clearTimeout(temporizador); temporizador = setTimeout(buscarEnMapa, 900); }));
-  
+  const f = $("#formNueva"), perdida = f.elements.seccion.value === "perdidas";
+  llenarEstados(f.elements.estado, f.elements.seccion.value, false);
+  $("#textoMapa").textContent = perdida
+    ? "📍 Toca el mapa donde se vio por última vez *"
+    : "📍 Toca el mapa donde se encuentra el animal (zona aproximada) *";
+  if (!mapSel) {
+    mapSel = mapaBase("mapSel", [18.92, -99.18], 12);
+    mapSel.on("click", (e) => {
+      if (marcador) marcador.setLatLng(e.latlng); else marcador = L.marker(e.latlng).addTo(mapSel);
+      f.elements.lat.value = e.latlng.lat.toFixed(3); // redondeado para no mostrar el punto exacto
+      f.elements.lng.value = e.latlng.lng.toFixed(3);
+    });
+  }
 }
 $("#formNueva").onsubmit = async (e) => {
   e.preventDefault();
