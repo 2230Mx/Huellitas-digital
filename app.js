@@ -201,7 +201,7 @@ async function abrirFicha(id) {
     <dt>Tamaño</dt><dd>${esc(p.tamano)}</dd><dt>Ciudad</dt><dd>${esc(p.ciudad)}</dd><dt>Publicado</dt><dd>${p.fecha}</dd>
     ${p.salud ? `<dt>Salud</dt><dd>${esc(p.salud)}</dd>` : ""}${p.requisitos ? `<dt>Requisitos</dt><dd>${esc(p.requisitos)}</dd>` : ""}</dl>
     <p>${esc(p.descripcion)}</p>${mapa}${bloqueDueno}
-    <div class="acciones">${acciones}${wa}<button class="btn sec" onclick="compartir(${p.id})">Compartir</button>${admin}
+    <div class="acciones">${acciones}<button class="btn sec" onclick="compartir(${p.id})">Compartir</button>${admin}
     <button class="btn sec" onclick="$('#ficha').close()">Cerrar</button></div></div>`;
   if (!$("#ficha").open) $("#ficha").showModal();
   if (p.lat != null) setTimeout(() => {
