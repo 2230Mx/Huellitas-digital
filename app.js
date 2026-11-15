@@ -188,11 +188,7 @@ async function abrirFicha(id) {
       ? `<button class="btn" onclick="abrirChat(${p.id},'${p.user_id}')">💬 Enviar mensaje</button><button class="btn sec" onclick="reportar('publicacion',${p.id})">🚩 Reportar publicación</button>`
       : `<button class="btn" onclick="login()">Inicia sesión para escribir</button>`;
 
-  // WhatsApp: se agrega el prefijo 52 y solo se usan números
-  const tel = (p.whatsapp || "").replace(/\D/g, "");
-  const wa = tel.length === 10 && !esDueno
-    ? `<a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/52${tel}?text=${encodeURIComponent("Hola, vi la publicación de " + (p.nombre || "este animal") + " en Huellitas a Casa")}">WhatsApp</a>` : "";
-  const admin = esAdmin ? `<button class="btn sec" onclick="eliminarPublicacion(${p.id})">🗑 Eliminar (admin)</button>` : "";
+   const admin = esAdmin ? `<button class="btn sec" onclick="eliminarPublicacion(${p.id})">🗑 Eliminar (admin)</button>` : "";
 
   // Mapa: se muestra en perdidas y en adopción si la publicación tiene ubicación
   const mapa = p.lat != null
