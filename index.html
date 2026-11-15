@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐾</text></svg>">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Huellitas a Casa</title>
+  <title>Huellitas a Casa | Mascotas perdidas y adopción de animales</title>
+  <meta name="description" content="Plataforma gratuita para publicar y buscar mascotas perdidas, encontradas y en adopción. Reencuentra a tu mascota o adopta un nuevo compañero.">
+  <link rel="canonical" href="https://huellitas-digital.vercel.app/">
+  <meta property="og:title" content="Huellitas a Casa">
+  <meta property="og:description" content="Mascotas perdidas y adopción responsable en un solo lugar.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://huellitas-digital.vercel.app/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐾</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -59,6 +65,7 @@
   </footer>
 
   <dialog id="ficha"></dialog>
+  <dialog id="usuarioDlg"></dialog>
 
   <!-- Perfil (obligatorio para publicar) -->
   <dialog id="perfilDlg">
@@ -85,7 +92,7 @@
       <h2>Publicar un animal</h2>
       <label>Tipo de publicación
         <select name="seccion" required>
-          <option value="perdidas">Mascota perdida</option>
+          <option value="perdidas">Mascota perdida o encontrada</option>
           <option value="adopcion">En adopción</option>
         </select></label>
       <label>Estado <select name="estado" required></select></label>
@@ -98,9 +105,9 @@
       <label>Raza <input name="raza"></label>
       <label>Ciudad o zona <input name="ciudad" required></label>
       <label>Calle o colonia (solo sirve para ubicar el mapa, no se publica)
-  <input id="buscaCalle" autocomplete="off" placeholder="Ej. Av. Morelos, Col. Centro"></label>
+        <input id="buscaCalle" autocomplete="off" placeholder="Ej. Av. Morelos, Col. Centro"></label>
       <div id="mapaForm">
-        <p class="meta" id="textoMapa">📍 Toca el mapa donde se vio por última vez *</p>
+        <p class="meta" id="textoMapa"></p>
         <div id="mapSel" class="mapaFicha"></div>
         <input type="hidden" name="lat"><input type="hidden" name="lng">
       </div>
@@ -147,13 +154,10 @@
     </div>
   </dialog>
 
-  <dialog id="usuarioDlg"></dialog>
-
   <div id="toast" class="toast" hidden></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

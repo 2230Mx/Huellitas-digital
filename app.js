@@ -1,4 +1,4 @@
-// ===== 1. CONEXIÓN CON SUPABASE (pega aquí tus 2 datos) =====
+// ===== 1. CONEXIÓN CON SUPABASE =====
 const SUPABASE_URL = "https://kgdvbvatsjfruxudrgih.supabase.co";
 const SUPABASE_KEY = "sb_publishable_G4UzdKF_gC0_FIRrYducnQ_RVhRBvLo";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -54,14 +54,29 @@ function pintarSesion() {
 }
 function pintarBadge() { const b = $("#badge"); b.hidden = !noLeidos; b.textContent = noLeidos; }
 
-// ===== PERFIL =====
-async function subirFoto(archivo) {
+// ===== FOTOS: se achican antes de subirlas (más rápido y ahorra espacio) =====
+async function achicar(archivo, max = 1000) {
+  if (!archivo.type.startsWith("image/")) return archivo;
+  try {
+    const img = await createImageBitmap(archivo);
+    const k = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.8));
+    return blob && blob.size < archivo.size ? new File([blob], "foto.jpg", { type: "image/jpeg" }) : archivo;
+  } catch (e) { return archivo; } // si algo falla, se sube la original
+}
+async function subirFoto(original) {
+  const archivo = await achicar(original);
   const ext = (archivo.name.split(".").pop() || "jpg").replace(/[^a-z0-9]/gi, "").toLowerCase();
   const ruta = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await db.storage.from("fotos").upload(ruta, archivo);
   if (error) throw error;
   return db.storage.from("fotos").getPublicUrl(ruta).data.publicUrl;
 }
+
+// ===== PERFIL (formulario de edición) =====
 async function abrirPerfil() {
   const f = $("#perfilForm");
   const [n = "", ...ap] = (usuario.user_metadata?.full_name || "").split(" ");
@@ -89,12 +104,9 @@ $("#perfilForm").onsubmit = async (e) => {
 
 // ===== LISTA de publicaciones =====
 async function cargar() {
-  if (SUPABASE_URL.startsWith("PEGA")) { $("#lista").innerHTML = '<p class="vacio">Falta pegar tu URL y tu clave de Supabase en config.js.</p>'; return; }
   const { data, error } = await db.from("publicaciones").select("*").order("created_at", { ascending: false });
   if (error) { $("#lista").innerHTML = `<p class="vacio">No se pudieron cargar las publicaciones: ${esc(error.message)}</p>`; return; }
   publicaciones = data.map(p => ({ ...p, fecha: p.created_at.slice(0, 10) }));
-  mostrar();
-    publicaciones = data.map(p => ({ ...p, fecha: p.created_at.slice(0, 10) }));
   mostrar();
   pintarHero();
 }
@@ -107,9 +119,29 @@ function mostrar() {
     (!ciudad || (p.ciudad || "").toLowerCase().includes(ciudad)) && (!esp || p.especie === esp) && (!tam || p.tamano === tam) && (!est || p.estado === est));
   lista.sort((a, b) => $("#fOrden").value === "nuevo" ? b.created_at.localeCompare(a.created_at) : a.created_at.localeCompare(b.created_at));
   $("#conteo").textContent = `${lista.length} publicación(es)`;
-  $("#lista").innerHTML = lista.length ? lista.map(tarjeta).join("") : '<p class="vacio">No hay publicaciones con esos filtros.</p>';
+  $("#lista").innerHTML = lista.length ? lista.map(tarjeta).join("") : '<p class="vacio">Aquí aún no hay huellitas 🐾 Prueba quitando algún filtro.</p>';
+}
+const claseEstado = (e) => e === "En búsqueda" ? "busca" : (e === "Encontrado" || e === "Adoptado") ? "ok" : "";
+const fotoHTML = (p, cls = "foto") => p.foto ? `<div class="${cls}" style="background-image:url('${esc(p.foto)}')"></div>` : `<div class="${cls}">${EMOJI[p.especie] || "🐾"}</div>`;
+function tarjeta(p) {
+  return `<button class="card" onclick="abrirFicha(${p.id})">${fotoHTML(p)}<div class="cuerpo">
+    <h3>${esc(p.nombre) || "Sin nombre"}</h3><p class="meta">${esc(p.especie)} · ${esc(p.tamano)} · ${esc(p.ciudad)}</p>
+    <span class="chip ${claseEstado(p.estado)}">${esc(p.estado)}</span></div></button>`;
 }
 
+// Contadores animados del inicio
+function pintarHero() {
+  const cont = $("#statsHero"); if (!cont) return;
+  const n = (f) => publicaciones.filter(f).length;
+  const datos = [["🏠", n(p => p.estado === "Encontrado" || p.estado === "Adoptado"), "han vuelto a casa"],
+                 ["🔎", n(p => p.estado === "En búsqueda"), "siguen en búsqueda"],
+                 ["💛", n(p => p.estado === "En adopción"), "esperan un hogar"]];
+  cont.innerHTML = datos.map(([i, v, t]) => `<div><b data-n="${v}">0</b><span>${i} ${t}</span></div>`).join("");
+  cont.querySelectorAll("b").forEach(b => {
+    const fin = +b.dataset.n; let x = 0;
+    const paso = setInterval(() => { x += Math.max(1, Math.ceil(fin / 20)); if (x >= fin) { x = fin; clearInterval(paso); } b.textContent = x; }, 40);
+  });
+}
 function confeti() {
   const emojis = ["🐾", "💛", "🎉", "🐶", "🐱", "✨"];
   for (let i = 0; i < 40; i++) {
@@ -124,18 +156,11 @@ function confeti() {
   }
 }
 
-const claseEstado = (e) => e === "En búsqueda" ? "busca" : (e === "Encontrado" || e === "Adoptado") ? "ok" : "";
-const fotoHTML = (p, cls = "foto") => p.foto ? `<div class="${cls}" style="background-image:url('${esc(p.foto)}')"></div>` : `<div class="${cls}">${EMOJI[p.especie] || "🐾"}</div>`;
-function tarjeta(p) {
-  return `<button class="card" onclick="abrirFicha(${p.id})">${fotoHTML(p)}<div class="cuerpo">
-    <h3>${esc(p.nombre) || "Sin nombre"}</h3><p class="meta">${esc(p.especie)} · ${esc(p.tamano)} · ${esc(p.ciudad)}</p>
-    <span class="chip ${claseEstado(p.estado)}">${esc(p.estado)}</span></div></button>`;
-}
-
 // ===== FICHA =====
 let mapaFicha = null;
 async function abrirFicha(id) {
   const p = publicaciones.find(x => x.id === id);
+  if (!p) return;
   if (mapaFicha) { mapaFicha.remove(); mapaFicha = null; }
   let dueno = null, likes = 0, yaLike = false;
   if (p.user_id) {
@@ -169,9 +194,10 @@ async function abrirFicha(id) {
     ? `<a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/52${tel}?text=${encodeURIComponent("Hola, vi la publicación de " + (p.nombre || "este animal") + " en Huellitas a Casa")}">WhatsApp</a>` : "";
   const admin = esAdmin ? `<button class="btn sec" onclick="eliminarPublicacion(${p.id})">🗑 Eliminar (admin)</button>` : "";
 
-  const mapa = p.seccion === "perdidas"
-    ? (p.lat != null ? `<p class="meta">📍 Última vez visto (zona aproximada)</p><div id="mapaFicha" class="mapaFicha"></div>`
-                     : `<div class="mapa">📍 Zona: <b>${esc(p.ciudad)}</b></div>`) : "";
+  // Mapa: se muestra en perdidas y en adopción si la publicación tiene ubicación
+  const mapa = p.lat != null
+    ? `<p class="meta">📍 ${p.seccion === "perdidas" ? "Última vez visto" : "Ubicación del animal"} (zona aproximada)</p><div id="mapaFicha" class="mapaFicha"></div>`
+    : `<div class="mapa">📍 Zona: <b>${esc(p.ciudad)}</b></div>`;
 
   $("#ficha").innerHTML = `<div class="det">${fotoHTML(p)}
     <h2>${esc(p.nombre) || "Sin nombre"} <span class="chip ${claseEstado(p.estado)}">${esc(p.estado)}</span></h2>
@@ -182,7 +208,8 @@ async function abrirFicha(id) {
     <div class="acciones">${acciones}${wa}<button class="btn sec" onclick="compartir(${p.id})">Compartir</button>${admin}
     <button class="btn sec" onclick="$('#ficha').close()">Cerrar</button></div></div>`;
   if (!$("#ficha").open) $("#ficha").showModal();
-    if (p.lat != null) setTimeout(() => {
+  if (p.lat != null) setTimeout(() => {
+    if (!$("#mapaFicha")) return;
     mapaFicha = mapaBase("mapaFicha", [p.lat, p.lng], 15);
     L.marker([p.lat, p.lng]).addTo(mapaFicha);
   }, 100);
@@ -191,7 +218,7 @@ async function abrirFicha(id) {
 async function cambiarEstado(id, nuevo) {
   const { error } = await db.from("publicaciones").update({ estado: nuevo }).eq("id", id);
   if (error) return alert("No se pudo actualizar: " + error.message);
-    $("#ficha").close(); cargar();
+  $("#ficha").close(); cargar();
   if (nuevo === "Encontrado" || nuevo === "Adoptado") confeti();
 }
 function compartir(id) {
@@ -264,6 +291,69 @@ async function resolverQueja(id) {
   abrirQuejas(); contarQuejas();
 }
 
+// ===== PERFIL DE USUARIO (tarjeta; con más datos para administradores) =====
+async function verPerfil(uid) {
+  const [pf, lk, mio, tel, rep] = await Promise.all([
+    db.from("perfiles").select("*").eq("id", uid).maybeSingle(),
+    db.from("likes").select("id", { count: "exact", head: true }).eq("a_user", uid),
+    usuario ? db.from("likes").select("id").eq("a_user", uid).eq("de_user", usuario.id).maybeSingle() : Promise.resolve({ data: null }),
+    esAdmin ? db.from("datos_privados").select("telefono").eq("id", uid).maybeSingle() : Promise.resolve({ data: null }),
+    esAdmin ? db.from("reportes").select("*").eq("usuario_id", uid).order("created_at", { ascending: false }) : Promise.resolve({ data: [] })
+  ]);
+  const p = pf.data;
+  if (!p) return alert("Este usuario ya no existe.");
+  const likes = lk.count || 0, yaLike = !!mio.data, esYo = usuario && usuario.id === uid;
+  const susPubs = publicaciones.filter(x => x.user_id === uid);
+  const reportes = rep.data || [];
+
+  const acciones = esYo ? `<button class="btn sec" onclick="$('#usuarioDlg').close();abrirPerfil()">Editar mi perfil</button>`
+    : usuario ? `<button class="btn sec" onclick="likePerfil('${uid}',${yaLike})">${yaLike ? "Quitar 👍" : "👍 Me gusta"}</button>
+                 <button class="btn sec" onclick="reportar('usuario','${uid}')">🚩 Reportar cuenta</button>`
+    : `<button class="btn" onclick="login()">Inicia sesión para dar like o reportar</button>`;
+
+  const bloqueAdmin = esAdmin ? `<div class="queja">
+      <b>🛡 Solo administradores</b>
+      <span>Teléfono: ${esc(tel.data?.telefono || "No registrado")}</span>
+      <span>Reportes contra esta cuenta: <b>${reportes.length}</b></span>
+      ${reportes.slice(0, 10).map(r => `<span class="meta">• ${esc(r.motivo)} (${r.tipo === "usuario" ? "cuenta" : "publicación"}, ${r.created_at.slice(0, 10)}${r.resuelto ? ", resuelto" : ""})</span>`).join("")}
+      ${!esYo ? `<div class="acciones"><button class="btn peligro" onclick="eliminarCuenta('${uid}')">🗑 Eliminar cuenta</button></div>` : ""}
+    </div>` : "";
+
+  $("#usuarioDlg").innerHTML = `<div class="det">
+    <div class="dueno">
+      <div class="avatar grande" style="${p.foto ? `background-image:url('${esc(p.foto)}')` : ""}">${p.foto ? "" : "👤"}</div>
+      <div><h2>${esc(p.nombre)} ${esc(p.apellido)}</h2>
+      <span class="meta">Miembro desde ${p.created_at.slice(0, 10)}</span></div>
+    </div>
+    <div class="acciones">${acciones}</div>
+    <div class="stats">
+      <div><b>${likes}</b><span>👍 Likes</span></div>
+      <div><b>${susPubs.length}</b><span>Publicaciones</span></div>
+      <div><b>${susPubs.filter(x => x.estado === "Encontrado" || x.estado === "Adoptado").length}</b><span>Casos resueltos</span></div>
+    </div>
+    <h3>${esYo ? "Mis publicaciones" : "Publicaciones"}</h3>
+    <div id="bandeja">${susPubs.length ? susPubs.map(x => `<button class="card" onclick="abrirFicha(${x.id})">
+      <b>${esc(x.nombre) || "Sin nombre"}</b> · ${esc(x.especie)} · ${esc(x.ciudad)}
+      <span class="chip ${claseEstado(x.estado)}">${esc(x.estado)}</span></button>`).join("") : '<p class="meta">Todavía no tiene publicaciones.</p>'}</div>
+    ${bloqueAdmin}
+    <button class="btn sec" onclick="$('#usuarioDlg').close()">Cerrar</button></div>`;
+  if (!$("#usuarioDlg").open) $("#usuarioDlg").showModal();
+}
+async function likePerfil(uid, yaLike) {
+  if (yaLike) await db.from("likes").delete().eq("de_user", usuario.id).eq("a_user", uid);
+  else { const { error } = await db.from("likes").insert({ a_user: uid }); if (error) return alert(error.message); }
+  verPerfil(uid);
+}
+async function eliminarCuenta(uid) {
+  if (!confirm("¿Eliminar esta cuenta? Se borrarán también sus publicaciones, mensajes y likes. No se puede deshacer.")) return;
+  const { error } = await db.rpc("eliminar_usuario", { uid });
+  if (error) return alert("No se pudo eliminar la cuenta: " + error.message);
+  $("#usuarioDlg").close(); $("#ficha").close();
+  await cargar(); contarQuejas();
+  if ($("#quejasDlg").open) abrirQuejas();
+  alert("Cuenta eliminada.");
+}
+
 // ===== NOTIFICACIONES de mensajes (en tiempo real) =====
 async function contarNoLeidos() {
   const { count } = await db.from("mensajes").select("id", { count: "exact", head: true }).eq("para_user", usuario.id).eq("leido", false);
@@ -293,7 +383,7 @@ function mostrarToast(texto, alClick) {
 let chat = null, timer = null;
 async function abrirChat(pubId, otroId) {
   chat = { pubId, otroId };
-  $("#ficha").close(); $("#bandejaDlg").close(); $("#toast").hidden = true;
+  $("#ficha").close(); $("#bandejaDlg").close(); $("#usuarioDlg").close(); $("#toast").hidden = true;
   if (!$("#chatDlg").open) $("#chatDlg").showModal();
   await pintarChat();
   clearInterval(timer); timer = setInterval(pintarChat, 5000);
@@ -352,9 +442,9 @@ $("#formNueva").elements.seccion.onchange = () => { actualizarForm(); setTimeout
 function actualizarForm() {
   const f = $("#formNueva"), perdida = f.elements.seccion.value === "perdidas";
   llenarEstados(f.elements.estado, f.elements.seccion.value, false);
-  $("#textoMapa").textContent = perdida
-    ? "📍 Toca el mapa donde se vio por última vez *"
-    : "📍 Toca el mapa donde se encuentra el animal (zona aproximada) *";
+  $("#mapaForm").hidden = false; // el mapa se usa en las dos secciones
+  const txt = $("#textoMapa");
+  if (txt) txt.textContent = perdida ? "📍 Toca el mapa donde se vio por última vez *" : "📍 Toca el mapa donde se encuentra el animal (zona aproximada) *";
   if (!mapSel) {
     mapSel = mapaBase("mapSel", [18.92, -99.18], 12);
     mapSel.on("click", (e) => {
@@ -364,12 +454,33 @@ function actualizarForm() {
     });
   }
 }
+
+// Al escribir la calle o la ciudad, el mapa busca el lugar y pone el marcador
+let temporizador = null;
+async function buscarEnMapa() {
+  const f = $("#formNueva");
+  const texto = [$("#buscaCalle")?.value.trim(), f.elements.ciudad.value.trim()].filter(Boolean).join(", ");
+  if (texto.length < 3 || !mapSel) return;
+  try {
+    const r = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=mx&q=" + encodeURIComponent(texto));
+    const lugares = await r.json();
+    if (!lugares.length) return;
+    const pos = L.latLng(+lugares[0].lat, +lugares[0].lon);
+    mapSel.setView(pos, 16);
+    if (marcador) marcador.setLatLng(pos); else marcador = L.marker(pos).addTo(mapSel);
+    f.elements.lat.value = pos.lat.toFixed(3);
+    f.elements.lng.value = pos.lng.toFixed(3);
+  } catch (e) { /* sin internet o servicio ocupado: se puede tocar el mapa a mano */ }
+}
+["#buscaCalle", "#formNueva [name=ciudad]"].forEach(sel =>
+  $(sel)?.addEventListener("input", () => { clearTimeout(temporizador); temporizador = setTimeout(buscarEnMapa, 900); }));
+
 $("#formNueva").onsubmit = async (e) => {
   e.preventDefault();
   const f = e.target, boton = f.querySelector('button[type="submit"]');
   const d = Object.fromEntries(new FormData(f)), archivo = f.elements.foto.files[0];
   delete d.foto;
-    if (!d.lat) return alert("Toca el mapa para marcar la ubicación.");
+  if (!d.lat) return alert("Toca el mapa o escribe la calle para marcar la ubicación.");
   d.lat = Number(d.lat); d.lng = Number(d.lng);
   d.whatsapp = (d.whatsapp || "").replace(/\D/g, "") || null;
   if (d.whatsapp && d.whatsapp.length !== 10) return alert("El WhatsApp debe tener 10 dígitos (sin el 52).");
@@ -397,77 +508,3 @@ $("#btnDonar").onclick = (e) => { e.preventDefault(); alert("Aquí conectarás t
 
 cambiarSeccion("perdidas");
 cargar();
-
-// ===== PERFIL DE USUARIO (público; con más datos para administradores) =====
-async function verPerfil(uid) {
-  const [pf, lk, mio, tel, rep] = await Promise.all([
-    db.from("perfiles").select("*").eq("id", uid).maybeSingle(),
-    db.from("likes").select("id", { count: "exact", head: true }).eq("a_user", uid),
-    usuario ? db.from("likes").select("id").eq("a_user", uid).eq("de_user", usuario.id).maybeSingle() : Promise.resolve({ data: null }),
-    esAdmin ? db.from("datos_privados").select("telefono").eq("id", uid).maybeSingle() : Promise.resolve({ data: null }),
-    esAdmin ? db.from("reportes").select("*").eq("usuario_id", uid).order("created_at", { ascending: false }) : Promise.resolve({ data: [] })
-  ]);
-  const p = pf.data;
-  if (!p) return alert("Este usuario ya no existe.");
-  const likes = lk.count || 0, yaLike = !!mio.data, esYo = usuario && usuario.id === uid;
-  const susPubs = publicaciones.filter(x => x.user_id === uid);
-  const reportes = rep.data || [];
-
-  const acciones = esYo ? `<button class="btn sec" onclick="$('#usuarioDlg').close();abrirPerfil()">Editar mi perfil</button>`
-    : usuario ? `<button class="btn sec" onclick="likePerfil('${uid}',${yaLike})">${yaLike ? "Quitar 👍" : "👍 Me gusta"}</button>
-                 <button class="btn sec" onclick="reportar('usuario','${uid}')">🚩 Reportar cuenta</button>`
-    : `<button class="btn" onclick="login()">Inicia sesión para dar like o reportar</button>`;
-
-  const bloqueAdmin = esAdmin ? `<div class="queja">
-      <b>🛡 Solo administradores</b>
-      <span>Teléfono: ${esc(tel.data?.telefono || "No registrado")}</span>
-      <span>Reportes contra esta cuenta: <b>${reportes.length}</b></span>
-      ${reportes.slice(0, 10).map(r => `<span class="meta">• ${esc(r.motivo)} (${r.tipo === "usuario" ? "cuenta" : "publicación"}, ${r.created_at.slice(0, 10)}${r.resuelto ? ", resuelto" : ""})</span>`).join("")}
-      ${!esYo ? `<div class="acciones"><button class="btn peligro" onclick="eliminarCuenta('${uid}')">🗑 Eliminar cuenta</button></div>` : ""}
-    </div>` : "";
-
-  $("#usuarioDlg").innerHTML = `<div class="det">
-    <div class="dueno">
-      <div class="avatar grande" style="${p.foto ? `background-image:url('${esc(p.foto)}')` : ""}">${p.foto ? "" : "👤"}</div>
-      <div><h2>${esc(p.nombre)} ${esc(p.apellido)}</h2>
-      <span class="meta">Miembro desde ${p.created_at.slice(0, 10)} · 👍 ${likes} · ${susPubs.length} publicación(es)</span></div>
-    </div>
-    <div class="acciones">${acciones}</div>
-        <div class="stats">
-      <div><b>${likes}</b><span>👍 Likes</span></div>
-      <div><b>${susPubs.length}</b><span>Publicaciones</span></div>
-      <div><b>${susPubs.filter(x => x.estado === "Encontrado" || x.estado === "Adoptado").length}</b><span>Casos resueltos</span></div>
-    </div>
-    <h3>${esYo ? "Mis publicaciones" : "Publicaciones"}</h3>
-    <div id="bandeja">${susPubs.length ? susPubs.map(x => `<button class="card" onclick="abrirFicha(${x.id})">
-      <b>${esc(x.nombre) || "Sin nombre"}</b> · ${esc(x.especie)} · ${esc(x.ciudad)}
-      <span class="chip ${claseEstado(x.estado)}">${esc(x.estado)}</span></button>`).join("") : '<p class="meta">Todavía no tiene publicaciones.</p>'}</div>
-    ${bloqueAdmin}
-    <button class="btn sec" onclick="$('#usuarioDlg').close()">Cerrar</button></div>`;
-  if (!$("#usuarioDlg").open) $("#usuarioDlg").showModal();
-}
-async function likePerfil(uid, yaLike) {
-  if (yaLike) await db.from("likes").delete().eq("de_user", usuario.id).eq("a_user", uid);
-  else { const { error } = await db.from("likes").insert({ a_user: uid }); if (error) return alert(error.message); }
-  verPerfil(uid);
-}
-async function eliminarCuenta(uid) {
-  if (!confirm("¿Eliminar esta cuenta? Se borrarán también sus publicaciones, mensajes y likes. No se puede deshacer.")) return;
-  const { error } = await db.rpc("eliminar_usuario", { uid });
-  if (error) return alert("No se pudo eliminar la cuenta: " + error.message);
-  $("#usuarioDlg").close(); $("#ficha").close();
-  await cargar(); contarQuejas();
-  if ($("#quejasDlg").open) abrirQuejas();
-  alert("Cuenta eliminada.");
-}
-function pintarHero() {
-  const n = (f) => publicaciones.filter(f).length;
-  const datos = [["🏠", n(p => p.estado === "Encontrado" || p.estado === "Adoptado"), "han vuelto a casa"],
-                 ["🔎", n(p => p.estado === "En búsqueda"), "siguen en búsqueda"],
-                 ["💛", n(p => p.estado === "En adopción"), "esperan un hogar"]];
-  $("#statsHero").innerHTML = datos.map(([i, v, t]) => `<div><b data-n="${v}">0</b><span>${i} ${t}</span></div>`).join("");
-  document.querySelectorAll("#statsHero b").forEach(b => {
-    const fin = +b.dataset.n; let x = 0;
-    const paso = setInterval(() => { x += Math.max(1, Math.ceil(fin / 20)); if (x >= fin) { x = fin; clearInterval(paso); } b.textContent = x; }, 40);
-  });
-}
