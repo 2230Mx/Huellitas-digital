@@ -94,6 +94,9 @@ async function cargar() {
   if (error) { $("#lista").innerHTML = `<p class="vacio">No se pudieron cargar las publicaciones: ${esc(error.message)}</p>`; return; }
   publicaciones = data.map(p => ({ ...p, fecha: p.created_at.slice(0, 10) }));
   mostrar();
+    publicaciones = data.map(p => ({ ...p, fecha: p.created_at.slice(0, 10) }));
+  mostrar();
+  pintarHero();
 }
 function llenarEstados(select, sec, incluirTodos) {
   select.innerHTML = (incluirTodos ? '<option value="">Todos los estados</option>' : "") + ESTADOS[sec].map(e => `<option>${e}</option>`).join("");
@@ -106,6 +109,21 @@ function mostrar() {
   $("#conteo").textContent = `${lista.length} publicación(es)`;
   $("#lista").innerHTML = lista.length ? lista.map(tarjeta).join("") : '<p class="vacio">No hay publicaciones con esos filtros.</p>';
 }
+
+function confeti() {
+  const emojis = ["🐾", "💛", "🎉", "🐶", "🐱", "✨"];
+  for (let i = 0; i < 40; i++) {
+    const e = document.createElement("span");
+    e.textContent = emojis[i % emojis.length];
+    e.className = "confeti";
+    e.style.left = Math.random() * 100 + "vw";
+    e.style.animationDuration = 2 + Math.random() * 2 + "s";
+    e.style.fontSize = 18 + Math.random() * 18 + "px";
+    document.body.appendChild(e);
+    setTimeout(() => e.remove(), 4500);
+  }
+}
+
 const claseEstado = (e) => e === "En búsqueda" ? "busca" : (e === "Encontrado" || e === "Adoptado") ? "ok" : "";
 const fotoHTML = (p, cls = "foto") => p.foto ? `<div class="${cls}" style="background-image:url('${esc(p.foto)}')"></div>` : `<div class="${cls}">${EMOJI[p.especie] || "🐾"}</div>`;
 function tarjeta(p) {
@@ -173,7 +191,8 @@ async function abrirFicha(id) {
 async function cambiarEstado(id, nuevo) {
   const { error } = await db.from("publicaciones").update({ estado: nuevo }).eq("id", id);
   if (error) return alert("No se pudo actualizar: " + error.message);
-  $("#ficha").close(); cargar();
+    $("#ficha").close(); cargar();
+  if (nuevo === "Encontrado" || nuevo === "Adoptado") confeti();
 }
 function compartir(id) {
   const p = publicaciones.find(x => x.id === id);
@@ -440,4 +459,15 @@ async function eliminarCuenta(uid) {
   await cargar(); contarQuejas();
   if ($("#quejasDlg").open) abrirQuejas();
   alert("Cuenta eliminada.");
+}
+function pintarHero() {
+  const n = (f) => publicaciones.filter(f).length;
+  const datos = [["🏠", n(p => p.estado === "Encontrado" || p.estado === "Adoptado"), "han vuelto a casa"],
+                 ["🔎", n(p => p.estado === "En búsqueda"), "siguen en búsqueda"],
+                 ["💛", n(p => p.estado === "En adopción"), "esperan un hogar"]];
+  $("#statsHero").innerHTML = datos.map(([i, v, t]) => `<div><b data-n="${v}">0</b><span>${i} ${t}</span></div>`).join("");
+  document.querySelectorAll("#statsHero b").forEach(b => {
+    const fin = +b.dataset.n; let x = 0;
+    const paso = setInterval(() => { x += Math.max(1, Math.ceil(fin / 20)); if (x >= fin) { x = fin; clearInterval(paso); } b.textContent = x; }, 40);
+  });
 }

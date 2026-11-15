@@ -140,3 +140,44 @@ dialog form .btn:not(.sec){padding:.7rem 1.7rem}
 .stats div{display:grid;padding:.6rem;text-align:center;background:var(--fondo);border:2px solid var(--borde);border-radius:14px}
 .stats b{font-family:"Baloo 2",sans-serif;font-size:1.6rem;line-height:1.1;color:var(--verde-osc)}
 .stats span{font-size:.8rem;color:var(--suave)}
+
+/* ===== Más bonito y apapachable ===== */
+body{
+  background:
+    radial-gradient(circle at 8% 0%,color-mix(in srgb,var(--sol) 25%,transparent),transparent 40%),
+    radial-gradient(circle at 95% 18%,color-mix(in srgb,var(--verde) 14%,transparent),transparent 40%),
+    var(--fondo);
+  background-attachment:fixed;
+}
+.hero{position:relative}
+.hero::after{content:"🐾";position:absolute;right:6%;top:1rem;font-size:6rem;opacity:.15;transform:rotate(18deg);pointer-events:none}
+.hero h1{background:linear-gradient(90deg,var(--verde-osc),var(--verde));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* Tarjetas que se levantan al pasar el mouse */
+.card{border-radius:22px;box-shadow:0 4px 14px rgba(0,0,0,.06);transition:transform .2s,box-shadow .2s,border-color .2s}
+.card:hover{transform:translateY(-6px) rotate(-.6deg);box-shadow:0 14px 30px rgba(0,0,0,.14)}
+.foto{transition:transform .3s}
+.card:hover .foto{transform:scale(1.06)}
+
+/* Botones con rebote */
+.btn{transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.btn:active{transform:scale(.96)}
+
+/* Las tarjetas aparecen una por una */
+@media (prefers-reduced-motion:no-preference){
+  .card{animation:entra .45s ease both}
+  .card:nth-child(2){animation-delay:.06s}.card:nth-child(3){animation-delay:.12s}
+  .card:nth-child(4){animation-delay:.18s}.card:nth-child(n+5){animation-delay:.24s}
+  @keyframes entra{from{opacity:0;transform:translateY(18px)}}
+}
+
+/* Contadores del inicio (paso 2) */
+.stats-hero{display:flex;flex-wrap:wrap;gap:.8rem;margin-top:1.3rem}
+.stats-hero div{display:grid;padding:.7rem 1.2rem;background:#fff;border:2px solid var(--borde);border-radius:18px;box-shadow:0 4px 14px rgba(0,0,0,.06)}
+.stats-hero b{font-family:"Baloo 2",sans-serif;font-size:2rem;line-height:1;color:var(--verde-osc)}
+.stats-hero span{font-size:.85rem;color:var(--suave)}
+
+/* Confeti (paso 3) */
+.confeti{position:fixed;top:-40px;z-index:100;pointer-events:none;animation:cae linear forwards}
+@keyframes cae{to{transform:translateY(110vh) rotate(360deg)}}
