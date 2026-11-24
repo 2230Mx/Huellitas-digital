@@ -3,11 +3,13 @@ const SUPABASE_URL = "https://kgdvbvatsjfruxudrgih.supabase.co";
 const SUPABASE_KEY = "sb_publishable_G4UzdKF_gC0_FIRrYducnQ_RVhRBvLo";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const ESTADOS = { perdidas: ["En búsqueda", "Encontrado"], adopcion: ["En adopción", "Adoptado"] };
+const ESTADOS = { perdidas: ["En búsqueda", "Encontrado"], adopcion: ["En adopción", "Adoptado"],
+                  todos: ["En búsqueda", "En adopción"], finales: ["Encontrado", "Adoptado"] };
+const DONAR_URL = ""; // pega aquí tu enlace de Mercado Pago, Ko-fi o PayPal
 const EMOJI = { Perro: "🐶", Gato: "🐱", Otro: "🐾" };
 const $ = (s) => document.querySelector(s);
 let usuario = null, perfil = null, esAdmin = false, noLeidos = 0, canal = null;
-let publicaciones = [], seccion = "perdidas";
+let publicaciones = [], seccion = "todos", vista = "lista", mapaGen = null, capaPins = null, hashAbierto = false;
 
 function esc(t) { return String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function mapaBase(id, centro, zoom) {
@@ -109,17 +111,20 @@ async function cargar() {
   publicaciones = data.map(p => ({ ...p, fecha: p.created_at.slice(0, 10) }));
   mostrar();
   pintarHero();
+  pintarImpacto();
+  if (!hashAbierto) { hashAbierto = true; abrirDesdeHash(); }
 }
 function llenarEstados(select, sec, incluirTodos) {
   select.innerHTML = (incluirTodos ? '<option value="">Todos los estados</option>' : "") + ESTADOS[sec].map(e => `<option>${e}</option>`).join("");
 }
 function mostrar() {
   const ciudad = $("#fCiudad").value.trim().toLowerCase(), esp = $("#fEspecie").value, tam = $("#fTamano").value, est = $("#fEstado").value;
-  const lista = publicaciones.filter(p => p.seccion === seccion &&
+  const lista = publicaciones.filter(p => enSeccion(p) &&
     (!ciudad || (p.ciudad || "").toLowerCase().includes(ciudad)) && (!esp || p.especie === esp) && (!tam || p.tamano === tam) && (!est || p.estado === est));
   lista.sort((a, b) => $("#fOrden").value === "nuevo" ? b.created_at.localeCompare(a.created_at) : a.created_at.localeCompare(b.created_at));
   $("#conteo").textContent = `${lista.length} publicación(es)`;
   $("#lista").innerHTML = lista.length ? lista.map(tarjeta).join("") : '<p class="vacio">Aquí aún no hay huellitas 🐾 Prueba quitando algún filtro.</p>';
+  pintarMapa(lista);
 }
 const claseEstado = (e) => e === "En búsqueda" ? "busca" : (e === "Encontrado" || e === "Adoptado") ? "ok" : "";
 const fotoHTML = (p, cls = "foto") => p.foto ? `<div class="${cls}" style="background-image:url('${esc(p.foto)}')"></div>` : `<div class="${cls}">${EMOJI[p.especie] || "🐾"}</div>`;
@@ -127,6 +132,47 @@ function tarjeta(p) {
   return `<button class="card" onclick="abrirFicha(${p.id})">${fotoHTML(p)}<div class="cuerpo">
     <h3>${esc(p.nombre) || "Sin nombre"}</h3><p class="meta">${esc(p.especie)} · ${esc(p.tamano)} · ${esc(p.ciudad)}</p>
     <span class="chip ${claseEstado(p.estado)}">${esc(p.estado)}</span></div></button>`;
+}
+
+const enSeccion = (p) => seccion === "todos" ? (p.estado === "En búsqueda" || p.estado === "En adopción")
+  : seccion === "finales" ? (p.estado === "Encontrado" || p.estado === "Adoptado") : p.seccion === seccion;
+const enlaceCaso = (id) => location.origin + location.pathname + "#caso-" + id;
+
+// Abre una ficha directo desde un enlace como  ...vercel.app/#caso-12
+function abrirDesdeHash() {
+  const m = location.hash.match(/^#caso-(\d+)$/);
+  if (m && publicaciones.some(x => x.id === +m[1])) abrirFicha(+m[1]);
+}
+
+// Lista o mapa general (rojo = perdidos, azul = adopción)
+function cambiarVista(v) {
+  vista = v;
+  $("#vLista").classList.toggle("active", v === "lista");
+  $("#vMapa").classList.toggle("active", v === "mapa");
+  mostrar();
+}
+function pintarMapa(lista) {
+  $("#mapaGeneral").hidden = vista !== "mapa";
+  $("#lista").hidden = vista === "mapa";
+  if (vista !== "mapa") return;
+  if (!mapaGen) { mapaGen = mapaBase("mapaGeneral", [18.92, -99.18], 11); capaPins = L.layerGroup().addTo(mapaGen); }
+  capaPins.clearLayers();
+  const pts = lista.filter(p => p.lat != null);
+  pts.forEach(p => L.circleMarker([p.lat, p.lng], { radius: 11, color: "#fff", weight: 3, fillOpacity: 1,
+      fillColor: p.seccion === "perdidas" ? "#e5605d" : "#2f7fc1" }).addTo(capaPins)
+    .bindPopup(`<b>${esc(p.nombre) || "Sin nombre"}</b><br>${esc(p.especie)} · ${esc(p.estado)}<br><a href="#caso-${p.id}">Ver ficha</a>`));
+  setTimeout(() => { mapaGen.invalidateSize(); if (pts.length) mapaGen.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [40, 40], maxZoom: 15 }); }, 60);
+}
+
+// Panel de impacto: avance hacia las metas SMART del documento
+async function pintarImpacto() {
+  const c = $("#impacto"); if (!c) return;
+  const { count } = await db.from("perfiles").select("id", { count: "exact", head: true });
+  const total = publicaciones.length, ok = publicaciones.filter(p => p.estado === "Encontrado" || p.estado === "Adoptado").length;
+  const metas = [["👥", count || 0, 100, "usuarios registrados", ""], ["📋", total, 50, "publicaciones", ""],
+                 ["🏠", total ? Math.round(ok * 100 / total) : 0, 25, "casos resueltos", "%"]];
+  c.innerHTML = metas.map(([i, v, meta, t, s]) => `<div class="meta-card"><b>${v}${s}</b><span>${i} ${t}</span>
+    <div class="barra"><i style="width:${Math.min(100, v * 100 / meta)}%"></i></div><small>Meta: ${meta}${s}</small></div>`).join("");
 }
 
 // Contadores animados del inicio
@@ -158,6 +204,7 @@ function confeti() {
 
 // ===== FICHA =====
 let mapaFicha = null;
+$("#ficha").addEventListener("close", () => { if (location.hash.startsWith("#caso-")) history.replaceState(null, "", location.pathname + location.search); });
 async function abrirFicha(id) {
   const p = publicaciones.find(x => x.id === id);
   if (!p) return;
@@ -188,7 +235,11 @@ async function abrirFicha(id) {
       ? `<button class="btn" onclick="abrirChat(${p.id},'${p.user_id}')">💬 Enviar mensaje</button><button class="btn sec" onclick="reportar('publicacion',${p.id})">🚩 Reportar publicación</button>`
       : `<button class="btn" onclick="login()">Inicia sesión para escribir</button>`;
 
-   const admin = esAdmin ? `<button class="btn sec" onclick="eliminarPublicacion(${p.id})">🗑 Eliminar (admin)</button>` : "";
+  // WhatsApp: se agrega el prefijo 52 y solo se usan números
+  const tel = (p.whatsapp || "").replace(/\D/g, "");
+  const wa = tel.length === 10 && !esDueno
+    ? `<a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/52${tel}?text=${encodeURIComponent("Hola, vi la publicación de " + (p.nombre || "este animal") + " en Huellitas a Casa")}">WhatsApp</a>` : "";
+  const admin = esAdmin ? `<button class="btn sec" onclick="eliminarPublicacion(${p.id})">🗑 Eliminar (admin)</button>` : "";
 
   // Mapa: se muestra en perdidas y en adopción si la publicación tiene ubicación
   const mapa = p.lat != null
@@ -201,7 +252,7 @@ async function abrirFicha(id) {
     <dt>Tamaño</dt><dd>${esc(p.tamano)}</dd><dt>Ciudad</dt><dd>${esc(p.ciudad)}</dd><dt>Publicado</dt><dd>${p.fecha}</dd>
     ${p.salud ? `<dt>Salud</dt><dd>${esc(p.salud)}</dd>` : ""}${p.requisitos ? `<dt>Requisitos</dt><dd>${esc(p.requisitos)}</dd>` : ""}</dl>
     <p>${esc(p.descripcion)}</p>${mapa}${bloqueDueno}
-    <div class="acciones">${acciones}<button class="btn sec" onclick="compartir(${p.id})">Compartir</button>${admin}
+    <div class="acciones">${acciones}${wa}<button class="btn sec" onclick="compartir(${p.id})">Compartir</button>${admin}
     <button class="btn sec" onclick="$('#ficha').close()">Cerrar</button></div></div>`;
   if (!$("#ficha").open) $("#ficha").showModal();
   if (p.lat != null) setTimeout(() => {
@@ -220,8 +271,8 @@ async function cambiarEstado(id, nuevo) {
 function compartir(id) {
   const p = publicaciones.find(x => x.id === id);
   const texto = `${p.estado}: ${p.nombre || p.especie} en ${p.ciudad}. Ayúdanos a difundir 🐾`;
-  if (navigator.share) navigator.share({ title: "Huellitas a Casa", text: texto, url: location.href });
-  else { navigator.clipboard.writeText(texto + " " + location.href); alert("Texto copiado. Pégalo en tus redes."); }
+  if (navigator.share) navigator.share({ title: "Huellitas a Casa", text: texto, url: enlaceCaso(id) });
+  else { navigator.clipboard.writeText(texto + " " + enlaceCaso(id)); alert("Texto copiado. Pégalo en tus redes."); }
 }
 
 // ===== LIKES y REPORTES =====
@@ -500,7 +551,10 @@ function cambiarSeccion(s) {
 }
 document.querySelectorAll(".tab[data-seccion]").forEach(t => t.onclick = () => cambiarSeccion(t.dataset.seccion));
 $("#filtros").addEventListener("input", mostrar);
-$("#btnDonar").onclick = (e) => { e.preventDefault(); alert("Aquí conectarás tu enlace de donación (Mercado Pago, PayPal, etc.)."); };
+$("#btnDonar").onclick = (e) => { e.preventDefault(); if (DONAR_URL) window.open(DONAR_URL, "_blank", "noopener"); else alert("Aquí irá tu enlace de donación. Se pega en DONAR_URL, al inicio de app.js."); };
+$("#vLista").onclick = () => cambiarVista("lista");
+$("#vMapa").onclick = () => cambiarVista("mapa");
+window.addEventListener("hashchange", abrirDesdeHash);
 
-cambiarSeccion("perdidas");
+cambiarSeccion("todos");
 cargar();
