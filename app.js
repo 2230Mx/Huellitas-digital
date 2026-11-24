@@ -246,10 +246,11 @@ async function abrirFicha(id) {
     ? `<p class="meta">📍 ${p.seccion === "perdidas" ? "Última vez visto" : "Ubicación del animal"} (zona aproximada)</p><div id="mapaFicha" class="mapaFicha"></div>`
     : `<div class="mapa">📍 Zona: <b>${esc(p.ciudad)}</b></div>`;
 
-  $("#ficha").innerHTML = `<div class="det">${fotoHTML(p)}
+    $("#ficha").innerHTML = `<div class="det">${fotoHTML(p)}
+    <h2>${esc(p.nombre) || "Sin nombre"} <span class="chip ${claseEstado(p.estado)}">${esc(p.estado)}</span></h2>
     <dl><dt>Especie</dt><dd>${esc(p.especie)}</dd><dt>Raza</dt><dd>${esc(p.raza) || "No indicada"}</dd>
     <dt>Tamaño</dt><dd>${esc(p.tamano)}</dd><dt>Ciudad</dt><dd>${esc(p.ciudad)}</dd><dt>Publicado</dt><dd class="largo">${p.fecha}</dd>
-    ${p.salud ? `<dt>Salud</dt><dd class="largo">${esc(p.salud)}</dd>` : ""}${p.requisitos ? `<dt>Requisitos</dt><dd class="largo">${esc(p.requisitos)}</dd>` : ""}</dl> : ""}</dl>
+    ${p.salud ? `<dt>Salud</dt><dd class="largo">${esc(p.salud)}</dd>` : ""}${p.requisitos ? `<dt>Requisitos</dt><dd class="largo">${esc(p.requisitos)}</dd>` : ""}</dl>
     <p>${esc(p.descripcion)}</p>${mapa}${bloqueDueno}
     <div class="acciones">${acciones}${wa}<button class="btn sec" onclick="compartir(${p.id})">Compartir</button>${admin}
     <button class="btn sec" onclick="$('#ficha').close()">Cerrar</button></div></div>`;
