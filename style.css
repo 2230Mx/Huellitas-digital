@@ -182,3 +182,13 @@ body{
 .confeti{position:fixed;top:-40px;z-index:100;pointer-events:none;animation:cae linear forwards}
 @keyframes cae{to{transform:translateY(110vh) rotate(360deg)}}
 #camposAdopcion{display:grid;gap:.7rem}
+/* ===== Aliados ===== */
+.aliados{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-top:1rem}
+.aliado{position:relative;display:grid;gap:.4rem;align-content:start;padding:1.1rem;background:#fff;border:2px solid var(--borde);border-radius:18px}
+.aliado .etiqueta{position:absolute;top:.7rem;right:.8rem;font-size:.72rem;font-weight:800;color:var(--suave);text-transform:uppercase;letter-spacing:.05em}
+.logo-aliado{width:56px;height:56px;border-radius:16px;background:var(--fondo);display:grid;place-items:center;font-size:1.8rem;overflow:hidden}
+.logo-aliado img{width:100%;height:100%;object-fit:cover}
+.aliado h3{font-size:1.25rem}
+.aliado p{margin:0;font-size:.95rem}
+.aliado .btn{justify-self:start;margin-top:.3rem}
+.vacio-aliado{border-style:dashed;background:transparent;color:var(--suave)}
