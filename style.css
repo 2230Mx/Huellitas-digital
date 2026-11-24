@@ -192,3 +192,13 @@ body{
 .aliado p{margin:0;font-size:.95rem}
 .aliado .btn{justify-self:start;margin-top:.3rem}
 .vacio-aliado{border-style:dashed;background:transparent;color:var(--suave)}
+/* ===== Ficha compacta y foto completa ===== */
+.det{gap:.55rem;padding:1.1rem 1.3rem}
+.det p{margin:0}
+.det .foto{position:relative;overflow:hidden;height:clamp(220px,42vh,340px);background-image:none!important}
+.det .foto::before,.det .foto::after{content:"";position:absolute;inset:0}
+.det .foto::before{inset:-24px;background:var(--img) center/cover;filter:blur(20px) brightness(.9)}
+.det .foto::after{background:var(--img) center/contain no-repeat}
+.det dl{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:.2rem .8rem;margin:0}
+.det dd.largo{grid-column:span 3}
+@media (max-width:420px){.det dl{grid-template-columns:auto 1fr}.det dd.largo{grid-column:auto}}

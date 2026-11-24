@@ -127,7 +127,7 @@ function mostrar() {
   pintarMapa(lista);
 }
 const claseEstado = (e) => e === "En búsqueda" ? "busca" : (e === "Encontrado" || e === "Adoptado") ? "ok" : "";
-const fotoHTML = (p, cls = "foto") => p.foto ? `<div class="${cls}" style="background-image:url('${esc(p.foto)}')"></div>` : `<div class="${cls}">${EMOJI[p.especie] || "🐾"}</div>`;
+const fotoHTML = (p, cls = "foto") => p.foto ? `<div class="${cls}" style="background-image:url('${esc(p.foto)}');--img:url('${esc(p.foto)}')"></div>` : `<div class="${cls}">${EMOJI[p.especie] || "🐾"}</div>`;
 function tarjeta(p) {
   return `<button class="card" onclick="abrirFicha(${p.id})">${fotoHTML(p)}<div class="cuerpo">
     <h3>${esc(p.nombre) || "Sin nombre"}</h3><p class="meta">${esc(p.especie)} · ${esc(p.tamano)} · ${esc(p.ciudad)}</p>
@@ -247,10 +247,9 @@ async function abrirFicha(id) {
     : `<div class="mapa">📍 Zona: <b>${esc(p.ciudad)}</b></div>`;
 
   $("#ficha").innerHTML = `<div class="det">${fotoHTML(p)}
-    <h2>${esc(p.nombre) || "Sin nombre"} <span class="chip ${claseEstado(p.estado)}">${esc(p.estado)}</span></h2>
     <dl><dt>Especie</dt><dd>${esc(p.especie)}</dd><dt>Raza</dt><dd>${esc(p.raza) || "No indicada"}</dd>
-    <dt>Tamaño</dt><dd>${esc(p.tamano)}</dd><dt>Ciudad</dt><dd>${esc(p.ciudad)}</dd><dt>Publicado</dt><dd>${p.fecha}</dd>
-    ${p.salud ? `<dt>Salud</dt><dd>${esc(p.salud)}</dd>` : ""}${p.requisitos ? `<dt>Requisitos</dt><dd>${esc(p.requisitos)}</dd>` : ""}</dl>
+    <dt>Tamaño</dt><dd>${esc(p.tamano)}</dd><dt>Ciudad</dt><dd>${esc(p.ciudad)}</dd><dt>Publicado</dt><dd class="largo">${p.fecha}</dd>
+    ${p.salud ? `<dt>Salud</dt><dd class="largo">${esc(p.salud)}</dd>` : ""}${p.requisitos ? `<dt>Requisitos</dt><dd class="largo">${esc(p.requisitos)}</dd>` : ""}</dl> : ""}</dl>
     <p>${esc(p.descripcion)}</p>${mapa}${bloqueDueno}
     <div class="acciones">${acciones}${wa}<button class="btn sec" onclick="compartir(${p.id})">Compartir</button>${admin}
     <button class="btn sec" onclick="$('#ficha').close()">Cerrar</button></div></div>`;
