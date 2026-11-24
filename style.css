@@ -181,3 +181,4 @@ body{
 /* Confeti (paso 3) */
 .confeti{position:fixed;top:-40px;z-index:100;pointer-events:none;animation:cae linear forwards}
 @keyframes cae{to{transform:translateY(110vh) rotate(360deg)}}
+#camposAdopcion{display:grid;gap:.7rem}

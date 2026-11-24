@@ -489,6 +489,10 @@ $("#formNueva").elements.seccion.onchange = () => { actualizarForm(); setTimeout
 function actualizarForm() {
   const f = $("#formNueva"), perdida = f.elements.seccion.value === "perdidas";
   llenarEstados(f.elements.estado, f.elements.seccion.value, false);
+   $("#camposAdopcion").hidden = perdida; // vacunas y requisitos solo en adopción
+  f.elements.descripcion.placeholder = perdida
+    ? "Color, señas particulares, collar, dónde y cuándo se vio por última vez..."
+    : "Carácter, edad aproximada, cómo es con niños y otros animales...";
   $("#mapaForm").hidden = false; // el mapa se usa en las dos secciones
   const txt = $("#textoMapa");
   if (txt) txt.textContent = perdida ? "📍 Toca el mapa donde se vio por última vez *" : "📍 Toca el mapa donde se encuentra el animal (zona aproximada) *";
@@ -527,6 +531,7 @@ $("#formNueva").onsubmit = async (e) => {
   const f = e.target, boton = f.querySelector('button[type="submit"]');
   const d = Object.fromEntries(new FormData(f)), archivo = f.elements.foto.files[0];
   delete d.foto;
+    if (d.seccion === "perdidas") { d.salud = ""; d.requisitos = ""; } // por si los llenó antes de cambiar de tipo
   if (!d.lat) return alert("Toca el mapa o escribe la calle para marcar la ubicación.");
   d.lat = Number(d.lat); d.lng = Number(d.lng);
   d.whatsapp = (d.whatsapp || "").replace(/\D/g, "") || null;
